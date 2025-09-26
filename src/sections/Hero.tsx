@@ -74,6 +74,7 @@ const Hero: React.FC = () => {
             gap: 6,
             alignItems: 'center',
             minHeight: '80vh',
+            mt:{xs: 8, sm: 6, lg: 0},
           }}
         >
           {/* Left Content */}
@@ -83,6 +84,7 @@ const Hero: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             sx={{
+              mt:{xs: 8, sm: 6, lg: 0},
               textAlign: { xs: 'center', lg: 'left' },
             }}
           >
