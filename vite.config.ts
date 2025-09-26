@@ -19,6 +19,26 @@ export default defineConfig({
         short_name: 'Portfolio',
         description: 'A modern portfolio website',
         theme_color: '#ffffff',
+        background_color: '#ffffff',
+        display: 'standalone',
+        start_url: '/',
+        icons: [
+          {
+            src: 'manifest-icon-192.maskable.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'manifest-icon-512.maskable.png',
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: 'favicon-196.png',
+            sizes: '196x196',
+            type: 'image/png'
+          }
+        ]
       },
 
       workbox: {
@@ -33,12 +53,10 @@ export default defineConfig({
         suppressWarnings: true,
         type: 'module',
       },
-      
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
     })
   ],
   server: {
-    port: 3000,
+    port: 5173,
     open: true
   }
 })

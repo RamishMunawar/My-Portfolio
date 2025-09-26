@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Install Test</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#ffffff">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .install-btn {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 20px 0;
+            display: none;
+        }
+        .install-btn:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PWA Install Icon Test</h1>
+        
+        <div id="status"></div>
+        
+        <button id="installBtn" class="install-btn">📱 Install App</button>
+        
+        <h3>📋 Test Results:</h3>
+        <div id="results"></div>
+        
+        <h3>🚀 Solutions:</h3>
+        <div class="info">
+            <strong>1. Chrome Flags Enable:</strong><br>
+            <code>chrome://flags/#bypass-app-banner-engagement-checks</code><br>
+            Enable karo aur Chrome restart karo!
+        </div>
+        
+        <div class="info">
+            <strong>2. User Engagement:</strong><br>
+            30 seconds wait karo aur page pe interact karo
+        </div>
+        
+        <div class="info">
+            <strong>3. Alternative Testing:</strong><br>
+            Mobile Chrome ya Edge browser mein test karo
+        </div>
+    </div>
+    
+    <script>
+        const status = document.getElementById('status');
+        const results = document.getElementById('results');
+        const installBtn = document.getElementById('installBtn');
+        let deferredPrompt;
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+        
+        // Test 1: Service Worker Support
+        if ('serviceWorker' in navigator) {
+            addResult('✅ Service Worker Support: Available', 'success');
+        } else {
+            addResult('❌ Service Worker Support: Not Available', 'error');
+        }
+        
+        // Test 2: HTTPS/Localhost
+        if (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+            addResult('✅ HTTPS/Localhost: OK', 'success');
+        } else {
+            addResult('❌ HTTPS/Localhost: Required for PWA', 'error');
+        }
+        
+        // Test 3: Manifest
+        fetch('/manifest.webmanifest')
+            .then(response => response.json())
+            .then(manifest => {
+                addResult('✅ Manifest: Loaded successfully', 'success');
+                
+                // Check required fields
+                const required = ['name', 'short_name', 'start_url', 'display', 'icons'];
+                const missing = required.filter(field => !manifest[field]);
+                if (missing.length === 0) {
+                    addResult('✅ Manifest Fields: All required fields present', 'success');
+                } else {
+                    addResult(`❌ Manifest Fields: Missing ${missing.join(', ')}`, 'error');
+                }
+                
+                // Check icons
+                if (manifest.icons && manifest.icons.length > 0) {
+                    const has192 = manifest.icons.some(icon => icon.sizes.includes('192'));
+                    const has512 = manifest.icons.some(icon => icon.sizes.includes('512'));
+                    if (has192 && has512) {
+                        addResult('✅ Icons: Has 192x192 and 512x512 icons', 'success');
+                    } else {
+                        addResult('❌ Icons: Missing required icon sizes', 'error');
+                    }
+                } else {
+                    addResult('❌ Icons: No icons defined', 'error');
+                }
+            })
+            .catch(error => {
+                addResult(`❌ Manifest: Failed to load - ${error.message}`, 'error');
+            });
+        
+        // Test 4: Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    addResult('✅ Service Worker: Registered successfully', 'success');
+                    
+                    if (registration.active) {
+                        addResult('✅ Service Worker: Active', 'success');
+                    } else {
+                        addResult('⚠️ Service Worker: Not active', 'warning');
+                    }
+                })
+                .catch(error => {
+                    addResult(`❌ Service Worker: Failed to register - ${error.message}`, 'error');
+                });
+        }
+        
+        // Test 5: Install Prompt Event
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            addResult('🎉 Install Prompt: Available! PWA is installable!', 'success');
+            status.innerHTML = '<div class="status success">🎉 Install prompt available! Click the install button below.</div>';
+            
+            // Show install button
+            installBtn.style.display = 'block';
+            installBtn.onclick = () => {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        addResult('✅ Install Result: User accepted installation', 'success');
+                    } else {
+                        addResult('❌ Install Result: User dismissed installation', 'error');
+                    }
+                    deferredPrompt = null;
+                    installBtn.style.display = 'none';
+                });
+            };
+        });
+        
+        // Test 6: Already Installed
+        window.addEventListener('appinstalled', () => {
+            addResult('🎉 App Installed: PWA was successfully installed!', 'success');
+            status.innerHTML = '<div class="status success">🎉 PWA successfully installed!</div>';
+        });
+        
+        // Check if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            addResult('✅ Already Installed: App is running in standalone mode', 'success');
+            status.innerHTML = '<div class="status success">✅ PWA is already installed and running!</div>';
+        }
+        
+        // Test 7: User Engagement
+        let userEngaged = false;
+        ['click', 'scroll', 'keydown', 'touchstart'].forEach(event => {
+            document.addEventListener(event, () => {
+                if (!userEngaged) {
+                    userEngaged = true;
+                    addResult('✅ User Engagement: User has interacted with the page', 'success');
+                }
+            }, { once: true });
+        });
+        
+        // Test 8: Chrome Flags Check
+        setTimeout(() => {
+            if (!deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches) {
+                addResult('⚠️ Chrome Flags: Install prompt not available. Enable Chrome flags!', 'warning');
+                status.innerHTML = '<div class="status warning">⚠️ Enable Chrome flags: chrome://flags/#bypass-app-banner-engagement-checks</div>';
+            }
+        }, 5000);
+        
+        // Auto-scroll to engage user
+        setTimeout(() => {
+            window.scrollTo(0, 100);
+            setTimeout(() => window.scrollTo(0, 0), 100);
+        }, 1000);
+        
+        // Show current URL
+        addResult(`📍 Current URL: ${location.href}`, 'info');
+        addResult(`🌐 Protocol: ${location.protocol}`, 'info');
+        addResult(`🏠 Hostname: ${location.hostname}`, 'info');
+    </script>
+</body>
+</html>

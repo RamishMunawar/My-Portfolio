@@ -3,120 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PWA Test</title>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ffffff">
+    <title>PWA Test - Portfolio</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
-        .pass { background: #d4edda; }
-        .fail { background: #f8d7da; }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: rgba(76, 175, 80, 0.3); }
+        .error { background: rgba(244, 67, 54, 0.3); }
+        .warning { background: rgba(255, 152, 0, 0.3); }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { background: #666; cursor: not-allowed; }
     </style>
 </head>
 <body>
-    <h1>PWA Install Test</h1>
-    <div id="tests"></div>
-    
+    <div class="container">
+        <h1>🚀 PWA Installation Test</h1>
+        <p>This page helps you test if your PWA is working correctly.</p>
+        
+        <div id="status"></div>
+        
+        <h2>PWA Requirements Check:</h2>
+        <div id="checks"></div>
+        
+        <h2>Installation:</h2>
+        <button id="installBtn" style="display: none;">📱 Install App</button>
+        <button onclick="location.href='/'">🏠 Go to Main Site</button>
+        
+        <h2>Instructions:</h2>
+        <ol>
+            <li>Check all requirements above are ✅</li>
+            <li>Click "Install App" button if available</li>
+            <li>Or look for install icon in Chrome address bar</li>
+            <li>On mobile: Look for "Add to Home Screen" option</li>
+        </ol>
+    </div>
+
     <script>
-        const tests = document.getElementById('tests');
-        
-        function addTest(name, passed, message) {
-            const div = document.createElement('div');
-            div.className = `test ${passed ? 'pass' : 'fail'}`;
-            div.innerHTML = `<strong>${name}:</strong> ${passed ? 'PASS' : 'FAIL'} - ${message}`;
-            tests.appendChild(div);
-        }
-        
-        // Test 1: Service Worker Support
-        if ('serviceWorker' in navigator) {
-            addTest('Service Worker Support', true, 'Browser supports service workers');
-        } else {
-            addTest('Service Worker Support', false, 'Browser does not support service workers');
-        }
-        
-        // Test 2: HTTPS
-        if (location.protocol === 'https:' || location.hostname === 'localhost') {
-            addTest('HTTPS/Localhost', true, 'Running on HTTPS or localhost');
-        } else {
-            addTest('HTTPS/Localhost', false, 'Not running on HTTPS (required for PWA)');
-        }
-        
-        // Test 3: Manifest
-        fetch('/manifest.json')
-            .then(response => response.json())
-            .then(manifest => {
-                addTest('Manifest', true, 'Manifest loaded successfully');
-                
-                // Test 4: Required manifest fields
-                const required = ['name', 'short_name', 'start_url', 'display', 'icons'];
-                const missing = required.filter(field => !manifest[field]);
-                if (missing.length === 0) {
-                    addTest('Manifest Fields', true, 'All required fields present');
-                } else {
-                    addTest('Manifest Fields', false, `Missing: ${missing.join(', ')}`);
-                }
-                
-                // Test 5: Icons
-                if (manifest.icons && manifest.icons.length > 0) {
-                    const has192 = manifest.icons.some(icon => icon.sizes.includes('192'));
-                    const has512 = manifest.icons.some(icon => icon.sizes.includes('512'));
-                    if (has192 && has512) {
-                        addTest('Icons', true, 'Has 192x192 and 512x512 icons');
-                    } else {
-                        addTest('Icons', false, 'Missing required icon sizes');
-                    }
-                } else {
-                    addTest('Icons', false, 'No icons defined');
-                }
-            })
-            .catch(() => {
-                addTest('Manifest', false, 'Failed to load manifest');
-            });
-        
-        // Test 6: Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
-                .then(registration => {
-                    addTest('Service Worker Registration', true, 'Service worker registered successfully');
-                })
-                .catch(error => {
-                    addTest('Service Worker Registration', false, `Failed to register: ${error.message}`);
-                });
-        }
-        
-        // Test 7: Install Prompt
         let deferredPrompt;
+        const statusDiv = document.getElementById('status');
+        const checksDiv = document.getElementById('checks');
+        const installBtn = document.getElementById('installBtn');
+
+        // Check PWA requirements
+        function checkPWARequirements() {
+            const checks = [
+                {
+                    name: 'HTTPS or localhost',
+                    check: () => location.protocol === 'https:' || location.hostname === 'localhost'
+                },
+                {
+                    name: 'Service Worker',
+                    check: () => 'serviceWorker' in navigator
+                },
+                {
+                    name: 'Manifest',
+                    check: () => {
+                        const manifestLink = document.querySelector('link[rel="manifest"]');
+                        return manifestLink && manifestLink.href;
+                    }
+                },
+                {
+                    name: 'Icons',
+                    check: () => {
+                        const manifestLink = document.querySelector('link[rel="manifest"]');
+                        if (!manifestLink) return false;
+                        return fetch(manifestLink.href)
+                            .then(response => response.json())
+                            .then(manifest => manifest.icons && manifest.icons.length > 0)
+                            .catch(() => false);
+                    }
+                }
+            ];
+
+            checksDiv.innerHTML = '';
+            checks.forEach(async (check, index) => {
+                const div = document.createElement('div');
+                div.className = 'status';
+                
+                try {
+                    const result = await check.check();
+                    div.className += result ? ' success' : ' error';
+                    div.innerHTML = `${result ? '✅' : '❌'} ${check.name}`;
+                } catch (error) {
+                    div.className += ' error';
+                    div.innerHTML = `❌ ${check.name} (Error: ${error.message})`;
+                }
+                
+                checksDiv.appendChild(div);
+            });
+        }
+
+        // Check service worker registration
+        function checkServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    const div = document.createElement('div');
+                    div.className = 'status ' + (registrations.length > 0 ? 'success' : 'warning');
+                    div.innerHTML = `${registrations.length > 0 ? '✅' : '⚠️'} Service Worker: ${registrations.length} registered`;
+                    statusDiv.appendChild(div);
+                });
+            }
+        }
+
+        // Install prompt handling
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            addTest('Install Prompt', true, 'Install prompt event fired - PWA is installable!');
-            
-            // Show install button
-            const installBtn = document.createElement('button');
-            installBtn.textContent = 'Install App';
-            installBtn.style.cssText = 'padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 10px 0;';
-            installBtn.onclick = () => {
+            installBtn.style.display = 'block';
+            statusDiv.innerHTML += '<div class="status success">✅ Install prompt available!</div>';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        addTest('Install Result', true, 'User accepted installation');
-                    } else {
-                        addTest('Install Result', false, 'User dismissed installation');
-                    }
-                    deferredPrompt = null;
-                });
-            };
-            tests.appendChild(installBtn);
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to the install prompt: ${outcome}`);
+                deferredPrompt = null;
+                installBtn.style.display = 'none';
+            }
         });
-        
-        // Test 8: Already Installed
+
+        // App installed
         window.addEventListener('appinstalled', () => {
-            addTest('App Installed', true, 'PWA was successfully installed!');
+            statusDiv.innerHTML += '<div class="status success">🎉 App installed successfully!</div>';
+            installBtn.style.display = 'none';
         });
-        
-        // Check if already installed
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            addTest('Already Installed', true, 'App is already installed and running in standalone mode');
+
+        // Initialize checks
+        checkPWARequirements();
+        checkServiceWorker();
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('SW registered:', registration);
+                })
+                .catch(error => {
+                    console.log('SW registration failed:', error);
+                });
         }
     </script>
 </body>
